@@ -141,31 +141,33 @@ gbmTrain <- train(
   x = as.matrix(data_tr[,-target_id]),
   y = data_tr$isIceberg,
   trControl = gbmTrControl,
-  tuneGrid = gbmGrid,
+  # tuneGrid = gbmGrid,
   method = "gbm")
 
 str(data_tr)
-
+print(gbmTrain)
 predict = predict(gbmTrain, newdata=data_te)
 predict
 CrossTable(data_te$isIceberg,predict)
 
 prob = predict(gbmTrain, newdata=data_te, type="prob")
 prob
-library(Metrics)
-actual <- c(1, 1, 1, 0, 0, 0)
-predicted <- c(0.9, 0.8, 0.4, 0.5, 0.3, 0.2)
-mean(ll(actual, predicted))
-logLoss(actual,predicted)
-ll = c(log(0.9), log(0.8), log(0.4), log(1-0.5), log(1-0.3), log(1-0.2))
-llmean = -mean(ll)
+# library(Metrics)
+# actual <- c(1, 1, 1, 0, 0, 0)
+# predicted <- c(0.9, 0.8, 0.4, 0.5, 0.3, 0.2)
+# mean(ll(actual, predicted))
+# logLoss(actual,predicted)
+# ll = c(log(0.9), log(0.8), log(0.4), log(1-0.5), log(1-0.3), log(1-0.2))
+# llmean = -mean(ll)
 
 truth=matrix(0, nrow=dim(data_te)[1], ncol=2)
 truth[,1] = ifelse(data_te$isIceberg==0,1,0)
 truth[,2] = ifelse(data_te$isIceberg==1,1,0)
 logloss = truth*log(prob)
+logloss_sum = rowSums(logloss)
+head(logloss)
+head(logloss_sum)
+logloss_m = -mean(logloss_sum)
+logloss_m
 
-logloss0 = -mean(logloss[,1], na.rm=T)
-logloss1 = -mean(logloss[,2], na.rm=T)
-logloss = logloss0+logloss1
-logloss
+
