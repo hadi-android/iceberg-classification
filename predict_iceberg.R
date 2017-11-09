@@ -141,7 +141,7 @@ gbmTrain <- train(
   x = as.matrix(data_tr[,-target_id]),
   y = data_tr$isIceberg,
   trControl = gbmTrControl,
-  # tuneGrid = gbmGrid,
+  tuneGrid = gbmGrid,
   method = "gbm")
 
 str(data_tr)
@@ -167,7 +167,34 @@ logloss = truth*log(prob)
 logloss_sum = rowSums(logloss)
 head(logloss)
 head(logloss_sum)
-logloss_m = -mean(logloss_sum)
+logloss_m = -mean(logloss_sum, na.rm = T)
 logloss_m
 
+############### extact features from test set
+d_test = fromJSON(file="test.json")
+N = length(d_test)
+highestBin = numeric(N)
+highestBinFreq = numeric(N)
+meanInt = numeric(N)
+for (i in 1:N){
+  # browser()
+  myImage = d_test[[i]]
+  band1 = matrix(myImage$band_1, 75, 75)
+  band2 = matrix(myImage$band_2, 75, 75)
+  composite = band1+band2
+  myHist = hist(composite, breaks=2)
+  Bins = myHist$breaks
+  freqs = myHist$counts
+  highestBin[i] = Bins[length(Bins)]
+  highestBinFreq[i] = freqs[length(freqs)]
+  meanInt[i] = mean(composite)
+}
 
+incAngle = unlist(lapply(d_test, '[[', 4))
+
+dataset_te = data.frame(cbind(incAngle,highestBin,highestBinFreq,meanInt))
+pred = predict(gbmTrain, dataset_te, type="prob")
+id = unlist(lapply(d_test, '[[', 1))
+output = data.frame(cbind(id,pred[,2]))
+names(output)[2] = "is_iceberg"
+write.csv(output,file="submission.csv", row.names = F)
